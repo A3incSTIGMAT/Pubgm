@@ -18,7 +18,7 @@ if not BOT_TOKEN:
     exit(1)
 
 # Инициализация бота и диспетчера
-bot = Bot(token=7707583089:AAHOL7IZ96PThIVjQByjW1J7I6cBK2ewNr0)
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # Хэндлер для команды /start
@@ -42,4 +42,5 @@ async def battle_handler(message: types.Message):
 if __name__ == "__main__":
     logger.info("Бот запускается...")
     executor.start_polling(dp, skip_updates=True)
+
 
