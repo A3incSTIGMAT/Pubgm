@@ -8,9 +8,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("7707583089:AAHOL7IZ96PThIVjQByjW1J7I6cBK2ewNr0")
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=7707583089:AAHOL7IZ96PThIVjQByjW1J7I6cBK2ewNr0)
 dp = Dispatcher(bot)
 
 @dp.message_handler(commands=["start"])
