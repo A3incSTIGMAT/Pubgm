@@ -9,5 +9,5 @@
 ## Установка
 1. Склонируй репозиторий:
    ```bash
-   git clone https://github.com/твой-юзернейм/pubdmbot.git
-   cd pubdmbot
+git clone https://github.com/A3incSTIGMAT/Pubgm.git
+
