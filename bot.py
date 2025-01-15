@@ -60,16 +60,8 @@ async def on_start():
     await on_startup(dp)
 
 if __name__ == '__main__':
-    # Убедитесь, что используете правильные аргументы и синхронизируйте запуск
-    port = os.getenv("PORT", 8080)
+    # Преобразование порта в целое число
+    port = int(os.getenv("PORT", 8080))  # Преобразуем строку в целое число
     logger.info(f"Запуск веб-сервера на порту {port}...")
     web.run_app(app, host="0.0.0.0", port=port)  # Только веб-сервер, polling не нужен
     # executor.start_polling(dp, skip_updates=True)  # Если используете polling, закомментируйте web.run_app
-
-
-
-
-
-
-
-
