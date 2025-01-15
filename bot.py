@@ -1,27 +1,23 @@
 import os
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils.exceptions import TelegramAPIError
-from aiohttp import web
+from aiogram.utils.executor import start_webhook
 from dotenv import load_dotenv
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Загрузка токена и URL вебхука из .env
+# Загрузка переменных окружения
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-WEBHOOK_PATH = "/webhook"
-PORT = int(os.getenv("PORT", 10000))
+WEBAPP_HOST = "0.0.0.0"  # Хост для запуска
+WEBAPP_PORT = int(os.getenv("PORT", 10000))  # Порт для запуска
 
-if not BOT_TOKEN:
-    logger.error("Токен бота не найден. Убедитесь, что он указан в .env файле.")
-    exit(1)
-
-if not WEBHOOK_URL:
-    logger.error("URL вебхука не указан. Убедитесь, что он указан в .env файле.")
+# Проверяем наличие обязательных переменных
+if not BOT_TOKEN or not WEBHOOK_URL:
+    logger.error("Токен бота или URL вебхука не указаны. Проверьте .env файл.")
     exit(1)
 
 # Инициализация бота и диспетчера
@@ -36,54 +32,25 @@ async def start_handler(message: types.Message):
 # Хэндлер для команды /battle
 @dp.message_handler(commands=["battle"])
 async def battle_handler(message: types.Message):
-    try:
-        # Импорт функции сражения (имитация для примера)
-        from battle import start_battle
-        result = start_battle(player_id=message.from_user.id)  # Здесь вызов вашей логики
-        await message.reply(result)
-    except Exception as e:
-        logger.error(f"Ошибка в обработке команды /battle: {e}")
-        await message.reply("Произошла ошибка во время PvP-сражения.")
+    await message.reply("PvP-сражение пока в разработке!")
 
-# Установка вебхука при запуске
-async def on_startup(app):
-    try:
-        await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
-        logger.info(f"Webhook успешно установлен: {WEBHOOK_URL + WEBHOOK_PATH}")
-    except TelegramAPIError as e:
-        logger.error(f"Ошибка при установке вебхука: {e}")
-        exit(1)
+# Настройка webhook
+async def on_startup(dispatcher):
+    logger.info("Установка вебхука...")
+    await bot.set_webhook(WEBHOOK_URL)
 
-# Удаление вебхука при завершении
-async def on_shutdown(app):
+async def on_shutdown(dispatcher):
+    logger.info("Удаление вебхука...")
     await bot.delete_webhook()
-    logger.info("Webhook удалён.")
+    await bot.session.close()
 
-# Обработка POST-запросов на вебхук
-async def webhook_handler(request):
-    try:
-        json_data = await request.json()
-        update = types.Update(**json_data)
-        await dp.process_update(update)
-        return web.Response(status=200)
-    except Exception as e:
-        logger.error(f"Ошибка при обработке вебхука: {e}")
-        return web.Response(status=500)
-
-# Обработка запроса на корневой маршрут (необязательно)
-async def index_handler(request):
-    return web.Response(text="Бот работает! Используйте Telegram для взаимодействия.")
-
-# Настройка маршрутов приложения
-app = web.Application()
-app.router.add_post(WEBHOOK_PATH, webhook_handler)
-app.router.add_get("/", index_handler)
-
-# Подключение хуков старта и завершения
-app.on_startup.append(on_startup)
-app.on_shutdown.append(on_shutdown)
-
-# Запуск приложения
 if __name__ == "__main__":
-    logger.info(f"Запуск веб-сервера на порту {PORT}...")
-    web.run_app(app, host="0.0.0.0", port=PORT)
+    start_webhook(
+        dispatcher=dp,
+        webhook_path="/webhook",  # Путь для вебхука
+        on_startup=on_startup,
+        on_shutdown=on_shutdown,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
+
