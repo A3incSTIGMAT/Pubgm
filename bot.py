@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from aiohttp import web
 from dotenv import load_dotenv
+from battle import start_battle  # Переместите импорт в начало файла
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -30,9 +31,8 @@ async def start_handler(message: types.Message):
 @dp.message_handler(commands=["battle"])
 async def battle_handler(message: types.Message):
     try:
-        # Предполагается, что функция start_battle принимает player_id и возвращает результат
-        from battle import start_battle
-        result = start_battle(player_id=message.from_user.id)
+        # Если start_battle асинхронная, добавьте await перед её вызовом
+        result = await start_battle(player_id=message.from_user.id)
         await message.reply(result)
     except Exception as e:
         logger.error(f"Ошибка в обработке команды /battle: {e}")
@@ -40,8 +40,16 @@ async def battle_handler(message: types.Message):
 
 # Функция для обработки обновлений через вебхук
 async def on_startup(dp):
-    webhook_url = "https://yourdomain.com/webhook"  # Замените на ваш домен и путь
-    await bot.set_webhook(webhook_url)
+    webhook_url = os.getenv("WEBHOOK_URL")
+    if not webhook_url:
+        logger.error("Не указан URL для вебхука. Убедитесь, что он задан в переменной окружения.")
+        exit(1)
+    try:
+        await bot.set_webhook(webhook_url)
+        logger.info(f"Webhook установлен на {webhook_url}")
+    except Exception as e:
+        logger.error(f"Ошибка при установке вебхука: {e}")
+        exit(1)
 
 # Обработка POST-запроса на вебхук
 async def webhook_handler(request):
@@ -54,7 +62,7 @@ async def webhook_handler(request):
 app = web.Application()
 app.router.add_post('/webhook', webhook_handler)
 
-# Запуск бота через вебхуки (при необходимости можно использовать webhook)
+# Запуск бота через вебхуки
 async def on_start():
     logger.info("Бот запускается...")
     await on_startup(dp)
@@ -65,3 +73,4 @@ if __name__ == '__main__':
     logger.info(f"Запуск веб-сервера на порту {port}...")
     web.run_app(app, host="0.0.0.0", port=port)  # Только веб-сервер, polling не нужен
     # executor.start_polling(dp, skip_updates=True)  # Если используете polling, закомментируйте web.run_app
+
