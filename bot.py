@@ -38,19 +38,27 @@ async def battle_handler(message: types.Message):
         logger.error(f"Ошибка в обработке команды /battle: {e}")
         await message.reply("Произошла ошибка во время PvP-сражения.")
 
-# Функция для настройки вебхуков
+# Функция для обработки обновлений через вебхук
 async def on_startup(dp):
     webhook_url = "https://yourdomain.com/webhook"  # Замените на ваш домен и путь
     await bot.set_webhook(webhook_url)
 
+# Обработка POST-запроса на вебхук
+async def webhook_handler(request):
+    json_str = await request.json()
+    update = types.Update(**json_str)
+    await dp.process_update(update)
+    return web.Response()
+
 # Создание веб-сервера для обработки обновлений через вебхуки
 app = web.Application()
-app.router.add_post('/webhook', dp._process_update)
+app.router.add_post('/webhook', webhook_handler)
 
 # Запуск бота через вебхуки
 if __name__ == '__main__':
     logger.info("Бот запускается...")
     web.run_app(app, host='0.0.0.0', port=8080)
+
 
 
 
