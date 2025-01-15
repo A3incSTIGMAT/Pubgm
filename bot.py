@@ -16,11 +16,13 @@ WEBAPP_HOST = "0.0.0.0"  # Хост для запуска
 WEBAPP_PORT = int(os.getenv("PORT", 10000))  # Порт для запуска
 
 # Проверяем наличие обязательных переменных
-if not BOT_TOKEN:
-    logger.error("Токен бота не указан. Проверьте .env файл.")
+if not BOT_TOKEN or not WEBHOOK_URL:
+    logger.error("Токен бота или URL вебхука не указаны. Проверьте .env файл.")
     exit(1)
-if not WEBHOOK_URL:
-    logger.error("URL вебхука не указан. Проверьте .env файл.")
+
+# Проверка правильности URL вебхука
+if not WEBHOOK_URL.endswith("/webhook"):
+    logger.error(f"WEBHOOK_URL должен содержать путь '/webhook'. Текущее значение: {WEBHOOK_URL}")
     exit(1)
 
 # Инициализация бота и диспетчера
@@ -40,36 +42,22 @@ async def battle_handler(message: types.Message):
 # Настройка webhook
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
-    try:
-        await bot.set_webhook(WEBHOOK_URL)
-        logger.info("Вебхук успешно установлен!")
-    except Exception as e:
-        logger.error(f"Ошибка установки вебхука: {e}")
-        exit(1)
+    await bot.set_webhook(WEBHOOK_URL)
 
 async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
-    try:
-        await bot.delete_webhook()
-        await bot.session.close()
-        logger.info("Вебхук успешно удалён.")
-    except Exception as e:
-        logger.error(f"Ошибка удаления вебхука: {e}")
+    await bot.delete_webhook()
+    await bot.session.close()
 
 if __name__ == "__main__":
-    # Проверяем, что WEBHOOK_URL заканчивается на "/webhook"
-    if not WEBHOOK_URL.endswith("/webhook"):
-        logger.error("WEBHOOK_URL должен содержать путь '/webhook'. Проверьте .env файл.")
-        exit(1)
-
-    # Запуск вебхука
     start_webhook(
         dispatcher=dp,
-        webhook_path="/webhook",  # Совпадает с указанным в WEBHOOK_URL
+        webhook_path="/webhook",  # Путь для вебхука
         on_startup=on_startup,
         on_shutdown=on_shutdown,
         host=WEBAPP_HOST,
         port=WEBAPP_PORT,
     )
+
 
 
