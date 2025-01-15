@@ -69,8 +69,9 @@ async def on_start():
 
 if __name__ == '__main__':
     # Преобразование порта в целое число
-    port = int(os.getenv("PORT", 8080))  # Преобразуем строку в целое число
+    port = int(os.getenv("PORT", 10000))  # Преобразуем строку в целое число
     logger.info(f"Запуск веб-сервера на порту {port}...")
     web.run_app(app, host="0.0.0.0", port=port)  # Только веб-сервер, polling не нужен
     # executor.start_polling(dp, skip_updates=True)  # Если используете polling, закомментируйте web.run_app
+_app
 
