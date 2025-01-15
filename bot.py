@@ -55,27 +55,14 @@ app = web.Application()
 app.router.add_post('/webhook', webhook_handler)
 
 # Запуск бота через вебхуки
-if __name__ == '__main__':
+async def on_start():
     logger.info("Бот запускается...")
+    await on_startup(dp)
     web.run_app(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
-    logger.info("Бот запускается...")
-    executor.start_polling(dp, skip_updates=True)
-from aiohttp import web
+    executor.start_polling(dp, skip_updates=True, on_start=on_start)
 
-# Обработка запроса на /webhook
-async def webhook(request):
-    # Здесь можно добавить обработку данных от Telegram
-    return web.Response(text="Webhook received!")
-
-app = web.Application()
-app.add_routes([web.post('/webhook', webhook)])
-
-if __name__ == '__main__':
-    logger.info("Бот запускается...")
-    executor.start_polling(dp, skip_updates=True)
-    web.run_app(app, host='0.0.0.0', port=8080)
 
 
 
