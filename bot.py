@@ -1,21 +1,27 @@
 import os
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
+from aiogram.utils.exceptions import TelegramAPIError
 from aiohttp import web
 from dotenv import load_dotenv
-from battle import start_battle  # Переместите импорт в начало файла
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Загрузка токена из .env файла
+# Загрузка токена и URL вебхука из .env
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_PATH = "/webhook"
+PORT = int(os.getenv("PORT", 10000))
 
 if not BOT_TOKEN:
     logger.error("Токен бота не найден. Убедитесь, что он указан в .env файле.")
+    exit(1)
+
+if not WEBHOOK_URL:
+    logger.error("URL вебхука не указан. Убедитесь, что он указан в .env файле.")
     exit(1)
 
 # Инициализация бота и диспетчера
@@ -31,47 +37,53 @@ async def start_handler(message: types.Message):
 @dp.message_handler(commands=["battle"])
 async def battle_handler(message: types.Message):
     try:
-        # Если start_battle асинхронная, добавьте await перед её вызовом
-        result = await start_battle(player_id=message.from_user.id)
+        # Импорт функции сражения (имитация для примера)
+        from battle import start_battle
+        result = start_battle(player_id=message.from_user.id)  # Здесь вызов вашей логики
         await message.reply(result)
     except Exception as e:
         logger.error(f"Ошибка в обработке команды /battle: {e}")
         await message.reply("Произошла ошибка во время PvP-сражения.")
 
-# Функция для обработки обновлений через вебхук
-async def on_startup(dp):
-    webhook_url = os.getenv("WEBHOOK_URL")
-    if not webhook_url:
-        logger.error("Не указан URL для вебхука. Убедитесь, что он задан в переменной окружения.")
-        exit(1)
+# Установка вебхука при запуске
+async def on_startup(app):
     try:
-        await bot.set_webhook(webhook_url)
-        logger.info(f"Webhook установлен на {webhook_url}")
-    except Exception as e:
+        await bot.set_webhook(WEBHOOK_URL + WEBHOOK_PATH)
+        logger.info(f"Webhook успешно установлен: {WEBHOOK_URL + WEBHOOK_PATH}")
+    except TelegramAPIError as e:
         logger.error(f"Ошибка при установке вебхука: {e}")
         exit(1)
 
-# Обработка POST-запроса на вебхук
+# Удаление вебхука при завершении
+async def on_shutdown(app):
+    await bot.delete_webhook()
+    logger.info("Webhook удалён.")
+
+# Обработка POST-запросов на вебхук
 async def webhook_handler(request):
-    json_str = await request.json()
-    update = types.Update(**json_str)
-    await dp.process_update(update)
-    return web.Response()
+    try:
+        json_data = await request.json()
+        update = types.Update(**json_data)
+        await dp.process_update(update)
+        return web.Response(status=200)
+    except Exception as e:
+        logger.error(f"Ошибка при обработке вебхука: {e}")
+        return web.Response(status=500)
 
-# Создание веб-сервера для обработки обновлений через вебхуки
+# Обработка запроса на корневой маршрут (необязательно)
+async def index_handler(request):
+    return web.Response(text="Бот работает! Используйте Telegram для взаимодействия.")
+
+# Настройка маршрутов приложения
 app = web.Application()
-app.router.add_post('/webhook', webhook_handler)
+app.router.add_post(WEBHOOK_PATH, webhook_handler)
+app.router.add_get("/", index_handler)
 
-# Запуск бота через вебхуки
-async def on_start():
-    logger.info("Бот запускается...")
-    await on_startup(dp)
+# Подключение хуков старта и завершения
+app.on_startup.append(on_startup)
+app.on_shutdown.append(on_shutdown)
 
-if __name__ == '__main__':
-    # Преобразование порта в целое число
-    port = int(os.getenv("PORT", 10000))  # Преобразуем строку в целое число
-    logger.info(f"Запуск веб-сервера на порту {port}...")
-    web.run_app(app, host="0.0.0.0", port=port)  # Только веб-сервер, polling не нужен
-    # executor.start_polling(dp, skip_updates=True)  # Если используете polling, закомментируйте web.run_app
-_app
-
+# Запуск приложения
+if __name__ == "__main__":
+    logger.info(f"Запуск веб-сервера на порту {PORT}...")
+    web.run_app(app, host="0.0.0.0", port=PORT)
