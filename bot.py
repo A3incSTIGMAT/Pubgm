@@ -54,16 +54,18 @@ async def webhook_handler(request):
 app = web.Application()
 app.router.add_post('/webhook', webhook_handler)
 
-# Запуск бота через вебхуки
+# Запуск бота через вебхуки (при необходимости можно использовать webhook)
 async def on_start():
     logger.info("Бот запускается...")
     await on_startup(dp)
 
 if __name__ == '__main__':
     # Убедитесь, что используете правильные аргументы и синхронизируйте запуск
-    executor.start_polling(dp, skip_updates=True)
-port = os.getenv("PORT", 8080)
-web.run_app(app, host="0.0.0.0", port=port)
+    port = os.getenv("PORT", 8080)
+    logger.info(f"Запуск веб-сервера на порту {port}...")
+    web.run_app(app, host="0.0.0.0", port=port)  # Только веб-сервер, polling не нужен
+    # executor.start_polling(dp, skip_updates=True)  # Если используете polling, закомментируйте web.run_app
+
 
 
 
