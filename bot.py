@@ -58,10 +58,12 @@ app.router.add_post('/webhook', webhook_handler)
 async def on_start():
     logger.info("Бот запускается...")
     await on_startup(dp)
-    web.run_app(app, host='0.0.0.0', port=8080)
+    await web.run_app(app, host='0.0.0.0', port=8080)
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True, on_start=on_start)
+    # Убедитесь, что используете правильные аргументы и синхронизируйте запуск
+    executor.start_polling(dp, skip_updates=True)
+
 
 
 
