@@ -1,10 +1,9 @@
 import os
-import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from aiohttp import web
 from dotenv import load_dotenv
-import logging
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +49,9 @@ app.router.add_post('/webhook', dp._process_update)
 
 # Запуск бота через вебхуки
 if __name__ == '__main__':
+    logger.info("Бот запускается...")
     web.run_app(app, host='0.0.0.0', port=8080)
+
 
 
 
