@@ -1,4 +1,4 @@
-import logging
+imimport logging
 import os
 from aiogram import Bot, Dispatcher, types
 from flask import Flask, request
@@ -36,17 +36,19 @@ dp = Dispatcher()
 logging.basicConfig(level=logging.INFO)
 
 # Хэндлеры команд
-@dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
 
-@dp.message_handler(commands=["help"])
 async def cmd_help(message: types.Message):
     await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
 
-@dp.message_handler(commands=["battle"])
 async def cmd_battle(message: types.Message):
     await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
+
+# Регистрируем хэндлеры для команд
+dp.register_message_handler(cmd_start, commands=["start"])
+dp.register_message_handler(cmd_help, commands=["help"])
+dp.register_message_handler(cmd_battle, commands=["battle"])
 
 # Настройка Flask сервера
 app = Flask(__name__)
@@ -86,6 +88,7 @@ if __name__ == "__main__":
 
     # Запуск aiogram бота с использованием новой версии
     dp.start_polling()
+
 
 
 
