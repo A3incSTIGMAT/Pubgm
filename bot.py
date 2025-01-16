@@ -1,63 +1,81 @@
 import logging
 import os
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.utils import executor
-from dotenv import load_dotenv
+from aiogram.types import Update
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from flask import Flask, request
+from dotenv import load_dotenv
+from aiohttp import web
 
-# Загружаем переменные из .env файла
+# Загрузка переменных окружения из .env
 load_dotenv()
 
-# Токен и URL из переменных окружения
+# Токен и URL из окружения
 API_TOKEN = os.getenv("API_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Например, https://your-app.onrender.com/webhook
 
-# Инициализация Flask и бота
+# Настройка Flask
 app = Flask(__name__)
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Команда /start
+# Инициализация бота и диспетчера
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher()
+
+# Хэндлер команды /start
 @dp.message_handler(Command("start"))
-async def cmd_start(message: Message):
+async def start_handler(message: types.Message):
     await message.answer("Hello! I'm your bot.")
 
-# Обработчик для всех других сообщений
+# Хэндлер для всех остальных сообщений
 @dp.message_handler()
-async def echo(message: Message):
+async def echo_handler(message: types.Message):
     await message.answer(f"Echo: {message.text}")
 
-# Вебхук для Flask
+# Вебхук обработчик для Flask
 @app.route('/webhook', methods=['POST'])
-async def webhook():
-    json_str = request.get_data().decode('UTF-8')
-    update = Update.de_json(json_str, bot)
-    await dp.process_update(update)
+def webhook():
+    json_str = request.get_data().decode('utf-8')
+    update = Update.parse_raw(json_str)
+    try:
+        # Обработка обновления через aiogram
+        dp.feed_update(bot, update)
+    except Exception as e:
+        logger.error(f"Error processing update: {e}")
     return 'OK'
 
-# Запуск бота с вебхуками
-async def on_start():
+# Функция запуска вебхука
+async def on_startup():
     try:
-        # Настройка webhook
         await bot.set_webhook(WEBHOOK_URL)
-        logger.info(f"Webhook set to: {WEBHOOK_URL}")
+        logger.info(f"Webhook set: {WEBHOOK_URL}")
     except Exception as e:
         logger.error(f"Error setting webhook: {e}")
         raise
 
-# Основной блок
-if __name__ == '__main__':
-    from aiogram import executor
-    loop = executor.start_polling(dp, skip_updates=True)
+# Функция остановки вебхука
+async def on_shutdown():
+    try:
+        await bot.delete_webhook()
+        logger.info("Webhook deleted.")
+    except Exception as e:
+        logger.error(f"Error deleting webhook: {e}")
 
-    # Для Flask запускаем сервер отдельно
-    app.run(host="0.0.0.0", port=5000, debug=False)
+# Основной блок запуска
+if __name__ == '__main__':
+    # Настройка перед запуском Flask
+    import asyncio
+    asyncio.run(on_startup())
+    
+    try:
+        app.run(host="0.0.0.0", port=5000, debug=False)
+    finally:
+        asyncio.run(on_shutdown())
+
 
 
 
