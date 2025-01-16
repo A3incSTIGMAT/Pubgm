@@ -1,26 +1,31 @@
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
-from aiogram.filters import Command
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 import logging
 import os
+from aiohttp import web
+from aiogram.types import ParseMode
 
-API_TOKEN = os.getenv('API_TOKEN')  # Убедитесь, что переменная окружения API_TOKEN настроена правильно
+API_TOKEN = os.getenv('API_TOKEN')
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# Использование фильтра Command
-@dp.message(Command("start"))
-async def send_welcome(message: types.Message):
-    await message.reply("Привет! Я бот.")
+# Вебхук для обработки сообщений
+async def on_message(request):
+    payload = await request.json()
+    update = types.Update(**payload)
+    await dp.process_update(update)
+    return web.Response()
 
-# Запуск бота
+# Настройка маршрутов
+app = web.Application()
+app.router.add_post(f'/{API_TOKEN}', on_message)
+
+# Запуск веб-сервера
 if __name__ == '__main__':
-    from aiogram import executor
-    executor.start_polling(dp, skip_updates=True)
+    web.run_app(app, host='0.0.0.0', port=5000)
+
 
 
 
