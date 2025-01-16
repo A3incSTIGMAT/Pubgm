@@ -54,33 +54,27 @@ async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
     await bot.delete_webhook()
 
-# Добавляем маршрут для проверки
+# Обработчик обновлений с вебхука
+async def handle_webhook(request):
+    # Получаем тело запроса как JSON
+    json_data = await request.json()
+    update = types.Update(**json_data)  # Преобразуем в объект Update
+    await dp.process_update(update)  # Обрабатываем обновление через Dispatcher
+    return web.Response(status=200)
+
+# Добавляем маршрут для вебхука
 app = web.Application()
 app.router.add_get('/', handle_root)
-
-# Основная настройка вебхука
-async def init_webhook():
-    # Устанавливаем вебхук
-    webhook_path = "/webhook"
-    app.router.add_post(webhook_path, dp.process_update)  # Обработка обновлений через dp.process_update
-
-    return app
+app.router.add_post('/webhook', handle_webhook)
 
 if __name__ == "__main__":
-    app = web.Application()
-
-    # Добавляем обработку /webhook
-    app.router.add_post('/webhook', dp.process_update)  # Обработка обновлений
-
-    # Добавляем обработчик для корня (для проверки)
-    app.router.add_get('/', handle_root)
-
     # Настроим вебхук
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
     # Запускаем приложение
     web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
+
 
 
 
