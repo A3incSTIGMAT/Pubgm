@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import asyncio
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -44,15 +45,26 @@ async def daily_bonus():
     print("Выдача ежедневного бонуса!")
     # Логика бонусов (например, добавление монет)
 
+# Основной цикл событий
+loop = asyncio.get_event_loop()
+
 # Планировщик задач для выполнения ежедневно
-scheduler = AsyncIOScheduler()
+scheduler = AsyncIOScheduler(event_loop=loop)
 scheduler.add_job(daily_bonus, IntervalTrigger(hours=24))
 scheduler.start()
 
 if __name__ == '__main__':
     from aiogram import executor
+
+    # Убедитесь, что event loop существует
+    try:
+        loop.run_until_complete(asyncio.sleep(0))
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
     # Запуск бота
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
