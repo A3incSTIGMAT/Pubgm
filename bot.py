@@ -62,7 +62,7 @@ app.router.add_get('/', handle_root)
 async def init_webhook():
     # Устанавливаем вебхук
     webhook_path = "/webhook"
-    app.router.add_post(webhook_path, dp.handle_update)
+    app.router.add_post(webhook_path, dp.process_update)  # Обработка обновлений через dp.process_update
 
     return app
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     app = web.Application()
 
     # Добавляем обработку /webhook
-    app.router.add_post('/webhook', dp.handle_update)
+    app.router.add_post('/webhook', dp.process_update)  # Обработка обновлений
 
     # Добавляем обработчик для корня (для проверки)
     app.router.add_get('/', handle_root)
@@ -81,6 +81,8 @@ if __name__ == "__main__":
 
     # Запускаем приложение
     web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
+
+
 
 
 
