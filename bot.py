@@ -39,63 +39,15 @@ async def start_handler(message: types.Message):
 async def battle_handler(message: types.Message):
     await message.reply("PvP-сражение пока в разработке!")
 
-# Хэндлер для команды /help
-@dp.message_handler(commands=["help"])
-async def help_handler(message: types.Message):
-    help_text = (
-        "/start - Начать игру или взаимодействие с ботом\n"
-        "/battle - Вызвать игрока на PvP\n"
-        "/help - Список всех команд\n"
-        "/rules - Правила игры\n"
-        "/about - О боте\n"
-        "/accept - Принять вызов\n"
-        "/attack - Атаковать соперника\n"
-        "/defend - Защититься от атаки\n"
-        "/exit - Выйти из текущей игры\n"
-        "/profile - Ваш профиль\n"
-        "/stats - Статистика игрока\n"
-        "/leaderboard - Таблица лидеров\n"
-        "/health - Узнать текущее здоровье\n"
-        "/shop - Открыть магазин\n"
-        "/buy - Купить предмет\n"
-        "/sell - Продать предмет\n"
-        "/inventory - Ваш инвентарь\n"
-        "/equip - Экипировать предмет\n"
-        "/unequip - Снять предмет\n"
-        "/balance - Проверить баланс\n"
-        "/daily - Получить ежедневный бонус\n"
-        "/upgrade - Улучшить оружие или броню\n"
-        "/addcoins - Добавить монеты (только для админов)\n"
-        "/resetstats - Сбросить статистику игрока"
-    )
-    await message.reply(help_text)
-
-# Хэндлер для команды /rules
-@dp.message_handler(commands=["rules"])
-async def rules_handler(message: types.Message):
-    await message.reply("Правила игры: Взаимодействуйте с ботом, сражайтесь с другими игроками и улучшайте свои характеристики!")
-
-# Хэндлер для команды /about
-@dp.message_handler(commands=["about"])
-async def about_handler(message: types.Message):
-    await message.reply("Бот для PvP-сражений в стиле PUBG Mobile!")
-
 # Настройка webhook
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
-    try:
-        # Настройка вебхука
-        await bot.set_webhook(WEBHOOK_URL)
-    except Exception as e:
-        logger.error(f"Ошибка при установке вебхука: {e}")
-        exit(1)
+    await bot.set_webhook(WEBHOOK_URL)
 
 async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
     await bot.delete_webhook()
-    # Получаем сессию и закрываем её корректно
-    session = await bot.get_session()
-    await session.close()
+    await bot.session.close()
 
 if __name__ == "__main__":
     start_webhook(
@@ -106,6 +58,7 @@ if __name__ == "__main__":
         host=WEBAPP_HOST,
         port=WEBAPP_PORT,
     )
+
 
 
 
