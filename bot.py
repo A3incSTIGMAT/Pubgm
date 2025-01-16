@@ -3,7 +3,6 @@ import os
 from aiogram import Bot, Dispatcher, types
 from flask import Flask, request
 from dotenv import load_dotenv
-from aiogram.utils import executor
 import asyncio
 from threading import Thread
 
@@ -21,15 +20,15 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 # Хэндлеры команд
-@dp.message_handler(commands=["start"])
+@dp.message(commands=["start"])
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
 
-@dp.message_handler(commands=["help"])
+@dp.message(commands=["help"])
 async def cmd_help(message: types.Message):
     await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
 
-@dp.message_handler(commands=["battle"])
+@dp.message(commands=["battle"])
 async def cmd_battle(message: types.Message):
     await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
 
@@ -65,8 +64,9 @@ if __name__ == "__main__":
     thread = Thread(target=run_flask)
     thread.start()
 
-    # Запуск aiogram бота с использованием executor для асинхронной работы
-    executor.start_polling(dp, skip_updates=True)
+    # Запуск aiogram бота с использованием asyncio
+    loop.run_until_complete(dp.start_polling())
+
 
 
 
