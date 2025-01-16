@@ -1,90 +1,69 @@
-import logging
 import os
+import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from flask import Flask, request
+from aiogram.types import ParseMode
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.utils import executor
+from aiohttp import web
 from dotenv import load_dotenv
-import asyncio
-from threading import Thread
 
-# Загрузка переменных из .env
+# Загрузка переменных окружения
 load_dotenv()
-
-# Получение токена и вебхука
 API_TOKEN = os.getenv('BOT_TOKEN')
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
-# Проверка загрузки токена и вебхука
-print(f"API_TOKEN: {API_TOKEN}")
-print(f"WEBHOOK_URL: {WEBHOOK_URL}")
-
-if not API_TOKEN:
-    raise ValueError("Ошибка: BOT_TOKEN не найден в переменных окружения.")
-else:
-    print("Токен загружен успешно!")
-
-if not WEBHOOK_URL:
-    raise ValueError("Ошибка: WEBHOOK_URL не найден в переменных окружения.")
-else:
-    print("WEBHOOK_URL загружен успешно!")
-
-# Инициализация бота и диспетчера
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
-
-# Установим логирование
+# Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Регистрация хэндлеров с использованием правильных фильтров в aiogram 3.x
-@dp.message(Command("start"))
+# Инициализация бота и диспетчера
+bot = Bot(token=API_TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher(bot)
+dp.middleware.setup(LoggingMiddleware())
+
+# Обработчик команды /start
+@dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
+    await message.reply("Привет! Это бот для PvP-сражений!")
 
-@dp.message(Command("help"))
+# Обработчик команды /help
+@dp.message_handler(commands=['help'])
 async def cmd_help(message: types.Message):
-    await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
+    await message.reply("Вот список команд:\n/start - Старт\n/help - Справка")
 
-@dp.message(Command("battle"))
-async def cmd_battle(message: types.Message):
-    await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
+# Настройка вебхука
+async def on_start(request):
+    return web.Response(text="Bot is running!")
 
-# Настройка Flask сервера
-app = Flask(__name__)
-
-# Вебхук для получения обновлений
-@app.route('/webhook', methods=["POST"])
-async def webhook():
-    json_str = await request.get_data()
-    update = types.Update.parse_raw(json_str)
+async def on_webhook(request):
+    json_str = await request.json()
+    update = types.Update.parse_obj(json_str)
     await dp.process_update(update)
-    return "OK"
+    return web.Response(status=200)
+
+# Настройка веб-сервера
+app = web.Application()
+app.router.add_get('/', on_start)
+app.router.add_post('/webhook', on_webhook)
 
 # Установка вебхука
-async def set_webhook():
-    webhook_url = f"{WEBHOOK_URL}/webhook"
-    await bot.set_webhook(webhook_url)
+async def on_start_webhook(dp):
+    await bot.set_webhook(WEBHOOK_URL)
 
-# Ожидание получения обновлений с Telegram
-async def on_start():
-    await set_webhook()
-    print("Webhook установлен")
+# Запуск бота и веб-сервера
+async def on_start_polling(dp):
+    await dp.start_polling()
 
-# Запуск Flask в отдельном потоке
-def run_flask():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+async def main():
+    await on_start_webhook(dp)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 10000)
+    await site.start()
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+if __name__ == '__main__':
+    from asyncio import run
+    run(main())
 
-    # Устанавливаем webhook
-    loop.create_task(on_start())
-
-    # Запуск Flask в отдельном потоке
-    thread = Thread(target=run_flask)
-    thread.start()
-
-    # Запуск aiogram бота с использованием новой версии
-    dp.start_polling()
 
 
 
