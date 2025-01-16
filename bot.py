@@ -1,4 +1,4 @@
-import logging
+impimport logging
 import os
 from aiogram import Bot, Dispatcher, types
 from flask import Flask, request
@@ -9,12 +9,28 @@ from threading import Thread
 # Загрузка переменных из .env
 load_dotenv()
 
-API_TOKEN = os.getenv('API_TOKEN')
+# Проверка загрузки токена и вебхука
+API_TOKEN = os.getenv('BOT_TOKEN')
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
+
+# Вывод отладочной информации
+print(f"API_TOKEN: {API_TOKEN}")
+print(f"WEBHOOK_URL: {WEBHOOK_URL}")
+
+# Проверка, что переменные загружены корректно
+if not API_TOKEN:
+    raise ValueError("Ошибка: BOT_TOKEN не найден в переменных окружения.")
+else:
+    print("Токен загружен успешно!")
+
+if not WEBHOOK_URL:
+    raise ValueError("Ошибка: WEBHOOK_URL не найден в переменных окружения.")
+else:
+    print("WEBHOOK_URL загружен успешно!")
 
 # Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 # Установим логирование
 logging.basicConfig(level=logging.INFO)
@@ -37,17 +53,16 @@ app = Flask(__name__)
 
 # Вебхук для приема обновлений от Telegram
 @app.route('/webhook', methods=["POST"])
-def webhook():
-    json_str = request.get_data(as_text=True)
+async def webhook():
+    json_str = await request.get_data()
     update = types.Update.parse_raw(json_str)
-    asyncio.run(dp.process_update(update))  # Обработка обновлений в асинхронном режиме
+    await dp.process_update(update)
     return "OK"
 
 # Установка вебхука
 async def set_webhook():
     webhook_url = f"{WEBHOOK_URL}/webhook"
     await bot.set_webhook(webhook_url)
-    print(f"Webhook установлен: {webhook_url}")
 
 # Ожидание получения обновлений с Telegram
 async def on_start():
@@ -56,21 +71,22 @@ async def on_start():
 
 # Запуск Flask в отдельном потоке
 def run_flask():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 
 if __name__ == "__main__":
-    # Проверка на загрузку токена
-    if not API_TOKEN:
-        raise ValueError("API_TOKEN не задан в переменных окружения или .env файле")
-
+    # Создаем event loop
     loop = asyncio.get_event_loop()
-    loop.create_task(on_start())  # Устанавливаем webhook
+
+    # Устанавливаем webhook
+    loop.create_task(on_start())  
+
     # Запуск Flask в отдельном потоке
     thread = Thread(target=run_flask)
     thread.start()
 
-    # Запуск aiogram бота с использованием asyncio
-    loop.run_forever()
+    # Запуск aiogram бота с использованием новой версии
+    dp.start_polling()
+
 
 
 
