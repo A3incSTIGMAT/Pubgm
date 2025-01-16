@@ -31,6 +31,9 @@ if not WEBHOOK_URL.endswith("/webhook"):
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
+# Устанавливаем текущий экземпляр бота
+Bot.set_current(bot)
+
 # Хэндлер для команды /start
 @dp.message_handler(commands=["start"])
 async def start_handler(message: types.Message):
@@ -74,6 +77,7 @@ if __name__ == "__main__":
 
     # Запускаем приложение
     web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
+
 
 
 
