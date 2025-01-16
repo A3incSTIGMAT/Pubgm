@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from flask import Flask, request
 from dotenv import load_dotenv
 import asyncio
-import sys
+from threading import Thread
 
 # Загрузка переменных из .env
 load_dotenv()
@@ -61,12 +61,12 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.create_task(on_start())  # Устанавливаем webhook
     # Запуск Flask в отдельном потоке
-    from threading import Thread
     thread = Thread(target=run_flask)
     thread.start()
 
     # Запуск aiogram бота с использованием новой версии
     dp.start_polling()
+
 
 
 
