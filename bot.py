@@ -1,76 +1,59 @@
-import os
 import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils.executor import start_webhook
+import os
+import random
 from dotenv import load_dotenv
-import aiohttp
-from aiohttp import web
-from commands import register_handlers  # Импортируем функцию регистрации команд
-
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from aiogram import Bot, Dispatcher, types
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from inventory import Inventory
+from models import weapons, armors, items  # Импортируем модели предметов
 
 # Загрузка переменных окружения
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-WEBAPP_HOST = "0.0.0.0"  # Хост для запуска
-WEBAPP_PORT = int(os.getenv("PORT", 10000))  # Порт для запуска
-
-# Проверяем наличие обязательных переменных
-if not BOT_TOKEN or not WEBHOOK_URL:
-    logger.error("Токен бота или URL вебхука не указаны. Проверьте .env файл.")
-    exit(1)
-
-# Проверка правильности URL вебхука
-if not WEBHOOK_URL.endswith("/webhook"):
-    logger.error(f"WEBHOOK_URL должен заканчиваться на '/webhook'. Текущее значение: {WEBHOOK_URL}")
-    exit(1)
 
 # Инициализация бота и диспетчера
-bot = Bot(token=BOT_TOKEN)
+API_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 
-# Устанавливаем текущий экземпляр бота
-Bot.set_current(bot)
+# Инвентарь игрока
+inventory = Inventory()
 
-# Регистрируем все хэндлеры команд
-register_handlers(dp)  # Регистрация команд из файла commands.py
+# Логирование
+logging.basicConfig(level=logging.INFO)
 
-# Добавляем обработчик для корневого пути "/"
-async def handle_root(request):
-    return web.Response(text="OK")
+# Установка обработчиков команд
+@dp.message_handler(commands=['start'])
+async def start_game(message: types.Message):
+    await message.reply("Привет! Это игра. Выберите команду.")
 
-# Настройка webhook
-async def on_startup(dispatcher):
-    logger.info("Установка вебхука...")
-    await bot.set_webhook(WEBHOOK_URL)
+@dp.message_handler(commands=['help'])
+async def help_command(message: types.Message):
+    await message.reply("Список команд:\n/start - начать игру\n/help - список команд")
 
-async def on_shutdown(dispatcher):
-    logger.info("Удаление вебхука...")
-    await bot.delete_webhook()
+@dp.message_handler(commands=['inventory'])
+async def show_inventory(message: types.Message):
+    items = inventory.show_inventory()
+    if items:
+        await message.reply(f"Ваш инвентарь: {', '.join(items)}")
+    else:
+        await message.reply("Ваш инвентарь пуст.")
 
-# Обработчик обновлений с вебхука
-async def handle_webhook(request):
-    # Получаем тело запроса как JSON
-    json_data = await request.json()
-    update = types.Update(**json_data)  # Преобразуем в объект Update
-    await dp.process_update(update)  # Обрабатываем обновление через Dispatcher
-    return web.Response(status=200)
+# Пример периодической задачи - ежедневный бонус
+async def daily_bonus():
+    print("Выдача ежедневного бонуса!")
+    # Логика бонусов (например, добавление монет)
 
-# Добавляем маршрут для вебхука
-app = web.Application()
-app.router.add_get('/', handle_root)
-app.router.add_post('/webhook', handle_webhook)
+# Планировщик задач для выполнения ежедневно
+scheduler = AsyncIOScheduler()
+scheduler.add_job(daily_bonus, IntervalTrigger(hours=24))
+scheduler.start()
 
-if __name__ == "__main__":
-    # Настроим вебхук
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
+if __name__ == '__main__':
+    from aiogram import executor
+    # Запуск бота
+    executor.start_polling(dp, skip_updates=True)
 
-    # Запускаем приложение
-    web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
 
 
 
