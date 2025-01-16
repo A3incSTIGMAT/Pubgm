@@ -3,7 +3,6 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.executor import start_webhook
 from dotenv import load_dotenv
-from aiohttp import web
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +22,7 @@ if not BOT_TOKEN or not WEBHOOK_URL:
 
 # Проверка правильности URL вебхука
 if not WEBHOOK_URL.endswith("/webhook"):
-    logger.error(f"WEBHOOK_URL должен содержать путь '/webhook'. Текущее значение: {WEBHOOK_URL}")
+    logger.error(f"WEBHOOK_URL должен заканчиваться на '/webhook'. Текущее значение: {WEBHOOK_URL}")
     exit(1)
 
 # Инициализация бота и диспетчера
@@ -40,19 +39,6 @@ async def start_handler(message: types.Message):
 async def battle_handler(message: types.Message):
     await message.reply("PvP-сражение пока в разработке!")
 
-# Хэндлер для обработки вебхуков
-async def webhook_handler(request):
-    # Получаем данные, отправленные Telegram через вебхук
-    json_data = await request.json()
-    logger.info(f"Получены данные от Telegram: {json_data}")
-
-    # Получаем обновление от Telegram и передаем его в aiogram
-    update = types.Update(**json_data)
-    await dp.process_update(update)
-    
-    # Ответ на вебхук
-    return web.Response(status=200)
-
 # Настройка webhook
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
@@ -63,13 +49,7 @@ async def on_shutdown(dispatcher):
     await bot.delete_webhook()
     await bot.session.close()
 
-# Запуск веб-сервера
 if __name__ == "__main__":
-    # Создание приложения aiohttp
-    app = web.Application()
-    app.router.add_post("/webhook", webhook_handler)
-
-    # Настройка и запуск вебхука
     start_webhook(
         dispatcher=dp,
         webhook_path="/webhook",  # Путь для вебхука
@@ -79,9 +59,6 @@ if __name__ == "__main__":
         port=WEBAPP_PORT,
     )
 
-    # Запуск aiohttp сервера на том же порту
-    logger.info(f"Запуск веб-сервера на {WEBAPP_HOST}:{WEBAPP_PORT}")
-    web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
 
 
 
