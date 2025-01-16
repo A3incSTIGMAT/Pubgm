@@ -20,15 +20,15 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 
 # Хэндлеры команд
-@dp.message(commands=["start"])
+@dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
 
-@dp.message(commands=["help"])
+@dp.message_handler(commands=["help"])
 async def cmd_help(message: types.Message):
     await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
 
-@dp.message(commands=["battle"])
+@dp.message_handler(commands=["battle"])
 async def cmd_battle(message: types.Message):
     await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
 
@@ -47,6 +47,7 @@ def webhook():
 async def set_webhook():
     webhook_url = f"{WEBHOOK_URL}/webhook"
     await bot.set_webhook(webhook_url)
+    print(f"Webhook установлен: {webhook_url}")
 
 # Ожидание получения обновлений с Telegram
 async def on_start():
@@ -58,6 +59,10 @@ def run_flask():
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
+    # Проверка на загрузку токена
+    if not API_TOKEN:
+        raise ValueError("API_TOKEN не задан в переменных окружения или .env файле")
+
     loop = asyncio.get_event_loop()
     loop.create_task(on_start())  # Устанавливаем webhook
     # Запуск Flask в отдельном потоке
@@ -65,7 +70,8 @@ if __name__ == "__main__":
     thread.start()
 
     # Запуск aiogram бота с использованием asyncio
-    loop.run_until_complete(dp.start_polling())
+    loop.run_forever()
+
 
 
 
