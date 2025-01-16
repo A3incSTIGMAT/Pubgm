@@ -1,6 +1,7 @@
 import logging
 import os
 from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
 from flask import Flask, request
 from dotenv import load_dotenv
 import asyncio
@@ -34,16 +35,16 @@ dp = Dispatcher()
 # Установим логирование
 logging.basicConfig(level=logging.INFO)
 
-# Регистрация хэндлеров с использованием нового синтаксиса aiogram 3.x
-@dp.message(commands=["start"])
+# Регистрация хэндлеров с использованием правильных фильтров в aiogram 3.x
+@dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
 
-@dp.message(commands=["help"])
+@dp.message(Command("help"))
 async def cmd_help(message: types.Message):
     await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
 
-@dp.message(commands=["battle"])
+@dp.message(Command("battle"))
 async def cmd_battle(message: types.Message):
     await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
 
@@ -84,6 +85,7 @@ if __name__ == "__main__":
 
     # Запуск aiogram бота с использованием новой версии
     dp.start_polling()
+
 
 
 
