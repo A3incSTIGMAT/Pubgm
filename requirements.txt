@@ -2,6 +2,7 @@ aiogram==3.0.0
 apscheduler==3.8.0
 flask==2.0.0
 requests==2.25.1
+Werkzeug==2.0.3
 
 
 
