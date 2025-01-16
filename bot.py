@@ -1,7 +1,6 @@
 import logging
 import os
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from flask import Flask, request
 from dotenv import load_dotenv
@@ -69,9 +68,10 @@ if __name__ == "__main__":
     from threading import Thread
     thread = Thread(target=run_flask)
     thread.start()
-    
-    # Запуск aiogram бота
-    executor.start_polling(dp, skip_updates=True)
+
+    # Запуск aiogram бота с использованием новой версии
+    dp.start_polling()
+
 
 
 
