@@ -3,6 +3,8 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.executor import start_webhook
 from dotenv import load_dotenv
+import aiohttp
+from aiohttp import web
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +41,10 @@ async def start_handler(message: types.Message):
 async def battle_handler(message: types.Message):
     await message.reply("PvP-сражение пока в разработке!")
 
+# Добавляем обработчик для корневого пути "/"
+async def handle_root(request):
+    return web.Response(text="OK")
+
 # Настройка webhook
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
@@ -47,17 +53,36 @@ async def on_startup(dispatcher):
 async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
     await bot.delete_webhook()
-    await bot.session.close()
+
+# Добавляем маршрут для проверки
+app = web.Application()
+app.router.add_get('/', handle_root)
+
+# Основная настройка вебхука
+async def init_webhook():
+    # Устанавливаем вебхук
+    webhook_path = "/webhook"
+    app.router.add_post(webhook_path, dp.handle_update)
+
+    return app
 
 if __name__ == "__main__":
-    start_webhook(
-        dispatcher=dp,
-        webhook_path="/webhook",  # Путь для вебхука
-        on_startup=on_startup,
-        on_shutdown=on_shutdown,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    app = web.Application()
+
+    # Добавляем обработку /webhook
+    app.router.add_post('/webhook', dp.handle_update)
+
+    # Добавляем обработчик для корня (для проверки)
+    app.router.add_get('/', handle_root)
+
+    # Настроим вебхук
+    app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
+
+    # Запускаем приложение
+    web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
+
+
 
 
 
