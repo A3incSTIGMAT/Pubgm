@@ -1,10 +1,8 @@
 import logging
 import os
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
 from aiogram.utils import executor
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.fsm.context import FSMContext
 from flask import Flask, request
 from dotenv import load_dotenv
 import asyncio
@@ -17,7 +15,7 @@ API_TOKEN = os.getenv('API_TOKEN')
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
 # Инициализация бота и диспетчера
-bot = Bot(token=API_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 # Установим логирование
@@ -29,15 +27,15 @@ dp.middleware.setup(LoggingMiddleware())
 # Хэндлеры команд
 @dp.message_handler(commands=["start"])
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Это бот для PvP-сражений!")
+    await message.answer("Привет! Это бот для PvP-сражений!", parse_mode="HTML")
 
 @dp.message_handler(commands=["help"])
 async def cmd_help(message: types.Message):
-    await message.answer("Вот список команд:\n/start - Старт\n/help - Справка")
+    await message.answer("Вот список команд:\n/start - Старт\n/help - Справка", parse_mode="HTML")
 
 @dp.message_handler(commands=["battle"])
 async def cmd_battle(message: types.Message):
-    await message.answer("Вы вызвали игрока на PvP-сражение!")
+    await message.answer("Вы вызвали игрока на PvP-сражение!", parse_mode="HTML")
 
 # Настройка Flask сервера
 app = Flask(__name__)
@@ -74,6 +72,7 @@ if __name__ == "__main__":
     
     # Запуск aiogram бота
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
