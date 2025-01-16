@@ -31,9 +31,6 @@ if not WEBHOOK_URL.endswith("/webhook"):
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# Устанавливаем текущий экземпляр бота
-Bot.set_current(bot)
-
 # Хэндлер для команды /start
 @dp.message_handler(commands=["start"])
 async def start_handler(message: types.Message):
@@ -52,6 +49,7 @@ async def handle_root(request):
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
     await bot.set_webhook(WEBHOOK_URL)
+    Bot.set_current(bot)  # Устанавливаем текущий экземпляр бота
 
 async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
@@ -59,11 +57,16 @@ async def on_shutdown(dispatcher):
 
 # Обработчик обновлений с вебхука
 async def handle_webhook(request):
-    # Получаем тело запроса как JSON
-    json_data = await request.json()
-    update = types.Update(**json_data)  # Преобразуем в объект Update
-    await dp.process_update(update)  # Обрабатываем обновление через Dispatcher
-    return web.Response(status=200)
+    try:
+        # Получаем тело запроса как JSON
+        json_data = await request.json()
+        update = types.Update(**json_data)  # Преобразуем в объект Update
+        logger.info(f"Получено обновление: {update}")  # Логируем обновление для диагностики
+        await dp.process_update(update)  # Обрабатываем обновление через Dispatcher
+        return web.Response(status=200)
+    except Exception as e:
+        logger.error(f"Ошибка при обработке запроса: {e}")
+        return web.Response(status=500)
 
 # Добавляем маршрут для вебхука
 app = web.Application()
@@ -77,6 +80,7 @@ if __name__ == "__main__":
 
     # Запускаем приложение
     web.run_app(app, host=WEBAPP_HOST, port=WEBAPP_PORT)
+
 
 
 
