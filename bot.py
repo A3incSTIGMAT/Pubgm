@@ -1,7 +1,6 @@
 import logging
 import os
 from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from flask import Flask, request
 from dotenv import load_dotenv
 import asyncio
@@ -19,9 +18,6 @@ dp = Dispatcher()
 
 # Установим логирование
 logging.basicConfig(level=logging.INFO)
-
-# Middleware для логирования
-dp.middleware.setup(LoggingMiddleware())
 
 # Хэндлеры команд
 @dp.message_handler(commands=["start"])
@@ -71,6 +67,7 @@ if __name__ == "__main__":
 
     # Запуск aiogram бота с использованием новой версии
     dp.start_polling()
+
 
 
 
