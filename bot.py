@@ -1,69 +1,65 @@
-import logging
 import os
-import random
-import asyncio
-from dotenv import load_dotenv
+import logging
+from flask import Flask, request
 from aiogram import Bot, Dispatcher, types
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from inventory import Inventory
-from models import weapons, armors, items  # Импортируем модели предметов
+from aiogram.types import Update
+from dotenv import load_dotenv
+from commands import COMMANDS  # Импортируем команды из файла commands.py
 
 # Загрузка переменных окружения
 load_dotenv()
 
-# Инициализация бота и диспетчера
+# Конфигурация бота
 API_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+WEBHOOK_HOST = os.getenv("RENDER_EXTERNAL_URL")  # URL вашего хостинга
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-# Инвентарь игрока
-inventory = Inventory()
+# Flask-приложение
+app = Flask(__name__)
 
 # Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Установка обработчиков команд
-@dp.message_handler(commands=['start'])
-async def start_game(message: types.Message):
-    await message.reply("Привет! Это игра. Выберите команду.")
+# Инициализация бота и диспетчера
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
 
-@dp.message_handler(commands=['help'])
-async def help_command(message: types.Message):
-    await message.reply("Список команд:\n/start - начать игру\n/help - список команд")
 
-@dp.message_handler(commands=['inventory'])
-async def show_inventory(message: types.Message):
-    items = inventory.show_inventory()
-    if items:
-        await message.reply(f"Ваш инвентарь: {', '.join(items)}")
-    else:
-        await message.reply("Ваш инвентарь пуст.")
+@app.route("/")
+def home():
+    return "Бот работает!"
 
-# Пример периодической задачи - ежедневный бонус
-async def daily_bonus():
-    print("Выдача ежедневного бонуса!")
-    # Логика бонусов (например, добавление монет)
 
-# Основной цикл событий
-loop = asyncio.get_event_loop()
+@app.route(WEBHOOK_PATH, methods=["POST"])
+async def handle_webhook():
+    """
+    Обработка обновлений, полученных через Webhook.
+    """
+    update = Update(**request.json)
+    await dp.process_update(update)
+    return "ok", 200
 
-# Планировщик задач для выполнения ежедневно
-scheduler = AsyncIOScheduler(event_loop=loop)
-scheduler.add_job(daily_bonus, IntervalTrigger(hours=24))
-scheduler.start()
 
-if __name__ == '__main__':
-    from aiogram import executor
+async def set_webhook():
+    """
+    Устанавливаем Webhook для Telegram.
+    """
+    await bot.set_webhook(WEBHOOK_URL)
+    logging.info(f"Webhook установлен: {WEBHOOK_URL}")
 
-    # Убедитесь, что event loop существует
-    try:
-        loop.run_until_complete(asyncio.sleep(0))
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
 
-    # Запуск бота
-    executor.start_polling(dp, skip_updates=True)
+async def on_startup():
+    """
+    Действия при запуске.
+    """
+    await set_webhook()
+
+
+async def on_shutdown():
+    """
+    Д
+
 
 
 
