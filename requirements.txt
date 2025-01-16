@@ -1,5 +1,7 @@
 aiogram==2.25
-python-dotenv==1.0.0
-flask==3.1.0
-requests==2.32.3
+flask
+apscheduler
+python-dotenv
+requests
+
 
