@@ -83,7 +83,12 @@ async def about_handler(message: types.Message):
 # Настройка webhook
 async def on_startup(dispatcher):
     logger.info("Установка вебхука...")
-    await bot.set_webhook(WEBHOOK_URL)
+    try:
+        # Настройка вебхука
+        await bot.set_webhook(WEBHOOK_URL)
+    except Exception as e:
+        logger.error(f"Ошибка при установке вебхука: {e}")
+        exit(1)
 
 async def on_shutdown(dispatcher):
     logger.info("Удаление вебхука...")
@@ -101,6 +106,7 @@ if __name__ == "__main__":
         host=WEBAPP_HOST,
         port=WEBAPP_PORT,
     )
+
 
 
 
