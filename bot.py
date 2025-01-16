@@ -4,7 +4,7 @@ from flask import Flask, request
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Update
 from dotenv import load_dotenv
-from commands import COMMANDS  # Импортируем команды из файла commands.py
+from commands import  # Импортируем команды из файла commands.py
 
 # Загрузка переменных окружения
 load_dotenv()
