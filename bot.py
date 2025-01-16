@@ -1,7 +1,6 @@
 import os
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils import executor
 from aiohttp import web
@@ -16,7 +15,7 @@ WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 logging.basicConfig(level=logging.INFO)
 
 # Инициализация бота и диспетчера
-bot = Bot(token=API_TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
@@ -50,9 +49,6 @@ async def on_start_webhook(dp):
     await bot.set_webhook(WEBHOOK_URL)
 
 # Запуск бота и веб-сервера
-async def on_start_polling(dp):
-    await dp.start_polling()
-
 async def main():
     await on_start_webhook(dp)
     runner = web.AppRunner(app)
@@ -63,6 +59,7 @@ async def main():
 if __name__ == '__main__':
     from asyncio import run
     run(main())
+
 
 
 
