@@ -1,64 +1,34 @@
-import os
 import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram import Bot, Dispatcher
+from aiogram.types import Message
 from aiogram.utils import executor
-from aiohttp import web
-from dotenv import load_dotenv
+from aiogram.filters import Command
 
-# Загрузка переменных окружения
-load_dotenv()
-API_TOKEN = os.getenv('BOT_TOKEN')
-WEBHOOK_URL = os.getenv('WEBHOOK_URL')
-
-# Логирование
+# Настройка логирования
 logging.basicConfig(level=logging.INFO)
+
+# Ваш токен API
+API_TOKEN = 'YOUR_BOT_TOKEN'
 
 # Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
-dp.middleware.setup(LoggingMiddleware())
+dp = Dispatcher()
 
-# Обработчик команды /start
-@dp.message_handler(commands=['start'])
-async def cmd_start(message: types.Message):
-    await message.reply("Привет! Это бот для PvP-сражений!")
+# Обработчик для команды "/start"
+@dp.message_handler(Command("start"))
+async def cmd_start(message: Message):
+    await message.answer("Hello! I'm your bot.")
 
-# Обработчик команды /help
-@dp.message_handler(commands=['help'])
-async def cmd_help(message: types.Message):
-    await message.reply("Вот список команд:\n/start - Старт\n/help - Справка")
+# Обработчик для других сообщений
+@dp.message_handler()
+async def echo(message: Message):
+    await message.answer(f"Echo: {message.text}")
 
-# Настройка вебхука
-async def on_start(request):
-    return web.Response(text="Bot is running!")
+# Запуск бота
+if __name__ == "__main__":
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
 
-async def on_webhook(request):
-    json_str = await request.json()
-    update = types.Update.parse_obj(json_str)
-    await dp.process_update(update)
-    return web.Response(status=200)
-
-# Настройка веб-сервера
-app = web.Application()
-app.router.add_get('/', on_start)
-app.router.add_post('/webhook', on_webhook)
-
-# Установка вебхука
-async def on_start_webhook(dp):
-    await bot.set_webhook(WEBHOOK_URL)
-
-# Запуск бота и веб-сервера
-async def main():
-    await on_start_webhook(dp)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 10000)
-    await site.start()
-
-if __name__ == '__main__':
-    from asyncio import run
-    run(main())
 
 
 
