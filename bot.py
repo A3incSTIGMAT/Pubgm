@@ -3,6 +3,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from flask import Flask, request
 from dotenv import load_dotenv
+from aiogram.utils import executor
 import asyncio
 from threading import Thread
 
@@ -14,7 +15,7 @@ WEBHOOK_URL = os.getenv('WEBHOOK_URL')
 
 # Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(bot)
 
 # Установим логирование
 logging.basicConfig(level=logging.INFO)
@@ -37,10 +38,10 @@ app = Flask(__name__)
 
 # Вебхук для приема обновлений от Telegram
 @app.route('/webhook', methods=["POST"])
-async def webhook():
-    json_str = await request.get_data()
+def webhook():
+    json_str = request.get_data(as_text=True)
     update = types.Update.parse_raw(json_str)
-    await dp.process_update(update)
+    asyncio.run(dp.process_update(update))  # Обработка обновлений в асинхронном режиме
     return "OK"
 
 # Установка вебхука
@@ -64,8 +65,9 @@ if __name__ == "__main__":
     thread = Thread(target=run_flask)
     thread.start()
 
-    # Запуск aiogram бота с использованием новой версии
-    dp.start_polling()
+    # Запуск aiogram бота с использованием executor для асинхронной работы
+    executor.start_polling(dp, skip_updates=True)
+
 
 
 
