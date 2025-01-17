@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO)
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не найден! Убедитесь, что переменная BOT_TOKEN настроена правильно.")
+    logging.error("BOT_TOKEN не найден! Убедитесь, что переменная BOT_TOKEN настроена правильно.")
+    exit(1)  # Если BOT_TOKEN не найден, завершаем работу
 
 # Настроим бота и диспетчер
 bot = Bot(token=BOT_TOKEN)
@@ -22,25 +23,25 @@ dp = Dispatcher(bot)
 async def cmd_start(message: types.Message):
     await message.reply("Привет! Я бот, и я готов работать!")
 
-# Веб-хендлер для основной страницы
+# Веб-хендлер для основной страницы (проверка состояния бота)
 async def on_start(request):
     return web.Response(text="Bot is running!")
 
-# Веб-хендлер для webhook
+# Веб-хендлер для webhook, который будет принимать обновления от Telegram
 async def on_webhook(request):
     json_str = await request.json()
     update = types.Update.parse_obj(json_str)
-    await dp.process_update(update)
-    return web.Response()
+    await dp.process_update(update)  # Передаем обновление в диспетчер
+    return web.Response()  # Подтверждаем получение обновления
 
 # Запуск веб-сервера с aiohttp
 async def start_webhook():
     app = web.Application()
-    app.router.add_get('/', on_start)
-    app.router.add_post('/webhook', on_webhook)
+    app.router.add_get('/', on_start)  # Обработчик главной страницы
+    app.router.add_post('/webhook', on_webhook)  # Обработчик для вебхуков
 
-    # Получаем порт из переменной окружения
-    port = int(os.getenv('PORT', 5000))  # Render передает PORT, если работает в облаке
+    # Получаем порт из переменной окружения (Render передает PORT, если работает в облаке)
+    port = int(os.getenv('PORT', 5000))  # Используем переменную окружения PORT, если она есть
 
     # Запуск aiohttp приложения
     runner = web.AppRunner(app)
@@ -57,9 +58,10 @@ async def main():
         webhook_url = os.getenv('WEBHOOK_URL')
 
         if not webhook_url:
-            raise ValueError("WEBHOOK_URL не найден! Убедитесь, что переменная WEBHOOK_URL настроена правильно.")
+            logging.error("WEBHOOK_URL не найден! Убедитесь, что переменная WEBHOOK_URL настроена правильно.")
+            return  # Возвращаем управление без завершения программы
         
-        # Устанавливаем webhook для бота
+        # Устанавливаем webhook для бота (Telegram будет отправлять обновления на этот URL)
         await bot.set_webhook(webhook_url)
         logging.info(f"Webhook установлен: {webhook_url}")
 
@@ -71,7 +73,6 @@ async def main():
 
     except Exception as e:
         logging.error(f"Ошибка при запуске бота: {e}")
-        raise
 
 if __name__ == '__main__':
     # Запускаем асинхронную функцию main
@@ -79,6 +80,7 @@ if __name__ == '__main__':
         asyncio.run(main())
     except Exception as e:
         logging.error(f"Фатальная ошибка: {e}")
+
 
 
 
