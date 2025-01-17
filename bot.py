@@ -20,11 +20,11 @@ dp = Dispatcher(bot)
 async def cmd_start(message: types.Message):
     await message.reply("Привет! Я бот, и я готов работать!")
 
-# Веб-хендлер для webhook
+# Веб-хендлер для основной страницы
 async def on_start(request):
     return web.Response(text="Bot is running!")
 
-# Настройка вебхуков
+# Веб-хендлер для webhook
 async def on_webhook(request):
     json_str = await request.json()
     update = types.Update.parse_obj(json_str)
@@ -32,28 +32,40 @@ async def on_webhook(request):
     return web.Response()
 
 # Запуск веб-сервера с aiohttp
-def start_webhook():
+async def start_webhook():
     app = web.Application()
     app.router.add_get('/', on_start)
     app.router.add_post('/webhook', on_webhook)
 
-    web.run_app(app, host='0.0.0.0', port=5000)
+    # Запуск aiohttp приложения
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 5000)
+    await site.start()
+
+    print("Web server running on http://0.0.0.0:5000")
 
 # Основная асинхронная функция для запуска бота и вебхуков
 async def main():
     try:
         # Устанавливаем webhook
-        webhook_url = os.getenv('WEBHOOK_URL', 'https://example.com/webhook')
+        webhook_url = os.getenv('WEBHOOK_URL', 'https://example.com/webhook')  # Замените на реальный URL
         await bot.set_webhook(webhook_url)
 
-        # Запуск веб-сервера и бота
-        start_webhook()
+        # Запуск веб-сервера с webhook
+        await start_webhook()
+
+        # Бот будет работать до завершения работы приложения
+        print("Bot is up and running...")
+
     except Exception as e:
-        logging.error(f"Ошибка: {e}")
+        logging.error(f"Ошибка при запуске бота: {e}")
+        raise
 
 if __name__ == '__main__':
-    # Запускаем асинхронную функцию
+    # Запускаем асинхронную функцию main
     asyncio.run(main())
+
 
 
 
