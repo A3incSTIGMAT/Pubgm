@@ -7,7 +7,8 @@ import os
 # Получаем токен и URL вебхука из переменных окружения
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 WEBHOOK_URL = os.getenv('WEBHOOK_URL')
-PORT = os.getenv('PORT', 5000)
+PORT = int(os.getenv('PORT', 5000))  # Это гарантирует, что PORT будет целым числом
+
 
 # Настроим логирование
 logging.basicConfig(level=logging.INFO)
