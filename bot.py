@@ -1,9 +1,11 @@
 import os
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ParseMode
 from aiohttp import web
 import asyncio
+
+# Устанавливаем логирование
+logging.basicConfig(level=logging.INFO)
 
 # Задаем токен бота через переменную окружения
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -37,26 +39,35 @@ async def start_webhook():
     app.router.add_get('/', on_start)
     app.router.add_post('/webhook', on_webhook)
 
+    # Получаем порт из переменной окружения
+    port = int(os.getenv('PORT', 5000))  # Render передает PORT, если работает в облаке
+
     # Запуск aiohttp приложения
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 5000)
+    site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
 
-    print("Web server running on http://0.0.0.0:5000")
+    logging.info(f"Web server running on http://0.0.0.0:{port}")
 
 # Основная асинхронная функция для запуска бота и вебхуков
 async def main():
     try:
-        # Устанавливаем webhook
-        webhook_url = os.getenv('WEBHOOK_URL', 'https://example.com/webhook')  # Замените на реальный URL
+        # Устанавливаем webhook URL из переменной окружения
+        webhook_url = os.getenv('WEBHOOK_URL')
+
+        if not webhook_url:
+            raise ValueError("WEBHOOK_URL не найден! Убедитесь, что переменная WEBHOOK_URL настроена правильно.")
+        
+        # Устанавливаем webhook для бота
         await bot.set_webhook(webhook_url)
+        logging.info(f"Webhook установлен: {webhook_url}")
 
         # Запуск веб-сервера с webhook
         await start_webhook()
 
         # Бот будет работать до завершения работы приложения
-        print("Bot is up and running...")
+        logging.info("Bot is up and running...")
 
     except Exception as e:
         logging.error(f"Ошибка при запуске бота: {e}")
@@ -64,7 +75,11 @@ async def main():
 
 if __name__ == '__main__':
     # Запускаем асинхронную функцию main
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logging.error(f"Фатальная ошибка: {e}")
+
 
 
 
