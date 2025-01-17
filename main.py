@@ -1,36 +1,78 @@
-from flask import Flask
-from threading import Thread
-import subprocess
-import time
+import logging
 import os
+from aiogram import Bot, Dispatcher, types
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import ParseMode
+from aiogram import Router
+from aiohttp import web
+import asyncio
+from config import BOT_TOKEN, WEBHOOK_URL
+from handlers import router
 
-# Загрузка переменных окружения
-from dotenv import load_dotenv
-load_dotenv()
+# Настроим логирование
+logging.basicConfig(level=logging.INFO)
 
-# Инициализация Flask для поддержания работы
-app = Flask("")
+# Создаем объект бота с токеном
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher(bot, storage=MemoryStorage())
 
-@app.route('/')
-def home():
-    return "Бот работает!"
+# Подключаем обработчики
+dp.include_router(router)
 
-def run():
-    app.run(host="0.0.0.0", port=8080)
+# Веб-хендлер для основной страницы
+async def on_start(request):
+    return web.Response(text="Bot is running!")
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
+# Веб-хендлер для webhook
+async def on_webhook(request):
+    json_str = await request.json()
+    update = types.Update.parse_obj(json_str)
+    await dp.process_update(update)
+    return web.Response()
 
-# Убедитесь, что процесс автоперезапуска работает корректно
-def auto_restart():
-    while True:
-        time.sleep(3600)  # Проверка и перезапуск раз в час
-        print("Перезапуск бота...")
-        subprocess.run(["python3", "bot.py"])
+# Запуск веб-сервера с aiohttp
+async def start_webhook():
+    app = web.Application()
+    app.router.add_get('/', on_start)
+    app.router.add_post('/webhook', on_webhook)
+
+    # Получаем порт из переменной окружения
+    port = int(os.getenv('PORT', 5000))  # Render передает PORT, если работает в облаке
+
+    # Запуск aiohttp приложения
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+
+    logging.info(f"Web server running on http://0.0.0.0:{port}")
+
+# Основная асинхронная функция для запуска бота и вебхуков
+async def main():
+    try:
+        # Устанавливаем вебхук URL
+        webhook_url = WEBHOOK_URL
+
+        # Устанавливаем webhook для бота
+        await bot.set_webhook(webhook_url)
+        logging.info(f"Webhook установлен: {webhook_url}")
+
+        # Запуск веб-сервера с webhook
+        await start_webhook()
+
+        # Бот будет работать до завершения работы приложения
+        logging.info("Bot is up and running...")
+
+    except Exception as e:
+        logging.error(f"Ошибка при запуске бота: {e}")
+        raise
 
 if __name__ == '__main__':
-    keep_alive()
-    auto_restart()
+    # Запускаем асинхронную функцию main
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logging.error(f"Фатальная ошибка: {e}")
+
 
 
